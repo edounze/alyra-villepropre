@@ -1,5 +1,6 @@
-# Custom
+# Dataset
 test/datasets
+train/datasets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
