@@ -2,13 +2,11 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-# Chargement du modèle pré-entraîné SSD MobileNet V2
-# Choix des modèles : https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md#tensorflow-2-detection-model-zoo
-# model = tf.saved_model.load('data/saved_model')
-model = tf.saved_model.load(r'C:\Users\charl\Documents\Projet\Villepropre\data\saved_model')
+# Chemin vers le modèle Keras sauvegardé
+model_path = 'train/garbage_detection_model.keras'
 
-# Fonction d'inférence à partir des signatures du modèle
-infer = model.signatures['serving_default']
+# Chargement du modèle Keras
+model = tf.keras.models.load_model(model_path)
 
 # Initialisation de la capture vidéo
 cap = cv2.VideoCapture(0)
@@ -17,39 +15,29 @@ while True:
     ret, image = cap.read()
     if not ret:
         break
-    
+
     # Convertion de l'image en RGB (OpenCV utilise BGR par défaut)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Redimensionner l'image à la taille attendue par le modèle (exemple : 180x180)
+    # Remplacer (180, 180) par la taille d'entrée attendue par votre modèle
+    resized_image = cv2.resize(image_rgb, (180, 180))
     
-    # Préparer le tenseur d'entrée sans convertir en float32 cette fois
-    input_tensor = tf.convert_to_tensor([image_rgb], dtype=tf.uint8)
+    # Normaliser l'image si nécessaire (exemple : les valeurs de pixels de 0-255 à 0-1)
+    normalized_image = resized_image / 255.0
 
-    # Utiliser la signature d'inférence avec les entrées nommées correctement
-    output_dict = infer(tf.constant(input_tensor))
-    
-    # Extraction des boîtes de détection, des scores, et classes
-    boxes = output_dict['detection_boxes'].numpy()[0]
-    scores = output_dict['detection_scores'].numpy()[0]
-    classes = output_dict['detection_classes'].numpy()[0].astype(np.int32)
+    # Ajouter une dimension batch à l'image
+    image_batch = np.expand_dims(normalized_image, axis=0)
 
-    height, width, _ = image.shape
+    # Faire une prédiction avec le modèle
+    predictions = model.predict(image_batch)
 
-    # Boucler sur chaque détection
-    for i in range(boxes.shape[0]):
-        if scores[i] > 0.5:  # Seuil de confiance
-            # La classe 44 correspond à "bouteille" dans le modèle COCO
-            if classes[i] == 44:
-                box = boxes[i]
-                y_min, x_min, y_max, x_max = box
-                x_min, x_max, y_min, y_max = (x_min * width, x_max * width,
-                                              y_min * height, y_max * height)
-                x_min, x_max, y_min, y_max = int(x_min), int(x_max), int(y_min), int(y_max)
+    # Ici, vous devrez déterminer la meilleure façon de traiter les prédictions de votre modèle
+    # Cela dépend de la sortie de votre modèle spécifique (par exemple, classification, détection, etc.)
 
-                # Dessine un rectangle autour de la bouteille
-                cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-
-    # Afficher l'image
-    cv2.imshow('Detection de bouteilles en plastique', image)
+    # Pour l'affichage, convertissez l'image RGB en BGR pour l'affichage avec OpenCV
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+    cv2.imshow('Detection dechet', image_bgr)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

@@ -5,7 +5,6 @@ import tensorflow as tf
 # Chargement du modèle pré-entraîné SSD MobileNet V2
 # Choix des modèles : https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md#tensorflow-2-detection-model-zoo
 # model = tf.saved_model.load('data/saved_model')
-
 model = tf.saved_model.load(r'C:\Users\charl\Documents\Projet\Villepropre\data\saved_model')
 
 # Fonction d'inférence à partir des signatures du modèle
