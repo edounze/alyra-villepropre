@@ -7,10 +7,13 @@ import tensorflow as tf
 import numpy as np
 
 # Flask
-from flask import Flask, Response, render_template
-
-app = Flask(__name__)
-
+from flask import Flask, Response, request, render_template, jsonify, redirect, url_for
+from aiortc import RTCPeerConnection, RTCSessionDescription
+import json
+import uuid
+import asyncio
+import logging
+import time
 
 # Création d'un objet ConfigParser
 config = configparser.ConfigParser()
@@ -25,15 +28,18 @@ model_path = config['DEFAULT']['ModelPath']
 model = tf.saved_model.load(model_path)
 infer = model.signatures['serving_default']
 
+# Set to keep track of RTCPeerConnection instances
+pcs = set()
 # Définition de la fonction generate_frames qui sera utilisée pour générer et traiter les frames de la vidéo
 def generate_frames():
     # Initialisation de la capture vidéo à partir de la webcam (0 représente la première webcam disponible)
-    cap = cv2.VideoCapture(0)
+    # Pour utiliser une caméra IP, il faut le lien RTSP (ex : 'rtsp://[USER]:[PASS]@[IP_ADDRESS]:[RTSP PORT]/media/video[STREAM TYPE]')
+    camera = cv2.VideoCapture(0)
 
     # Boucle infinie pour lire les frames de la vidéo en continu
     while True:
         # Lecture d'une frame de la vidéo. 'success' est un booléen indiquant si la lecture a réussi, 'image' est la frame lue
-        success, image = cap.read()
+        success, image = camera.read()
 
         # Si la lecture de la frame échoue, sortir de la boucle
         if not success:
@@ -75,16 +81,58 @@ def generate_frames():
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
+app = Flask(__name__, static_url_path='/static')
+
+# Asynchronous function to handle offer exchange
+async def offer_async():
+    params = await request.json
+    offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
+
+    # Create an RTCPeerConnection instance
+    pc = RTCPeerConnection()
+
+    # Generate a unique ID for the RTCPeerConnection
+    pc_id = "PeerConnection(%s)" % uuid.uuid4()
+    pc_id = pc_id[:8]
+
+    # Create a data channel named "chat"
+    # pc.createDataChannel("chat")
+
+    # Create and set the local description
+    await pc.createOffer(offer)
+    await pc.setLocalDescription(offer)
+
+    # Prepare the response data with local SDP and type
+    response_data = {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
+
+    return jsonify(response_data)
+
+# Wrapper function for running the asynchronous offer function
+def offer():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    future = asyncio.run_coroutine_threadsafe(offer_async(), loop)
+    return future.result()
+
+# Route to handle the offer request
+@app.route('/offer', methods=['POST'])
+def offer_route():
+    return offer()
+
+
 @app.route('/')
 def index():
     # Page d'accueil
     return render_template('index.html')
 
-
 @app.route('/video_feed')
 def video_feed():
-    # Page utilisé pour le flux vidéo (voir fichier templates/index.html)
+    # Page utilisée pour le flux vidéo (voir fichier templates/index.html)
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
+# Lancement de l'application
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
