@@ -16,6 +16,10 @@ import uuid
 import asyncio
 import logging
 import time
+import base64
+import requests
+
+
 
 # Création d'un objet ConfigParser
 config = configparser.ConfigParser()
@@ -65,7 +69,7 @@ def draw_bounding_boxes(image):
 
     return image
 
-# Définition de la fonction generate_frames qui sera utilisée pour générer et traiter les frames de la vidéo
+# Génère et traite les frames de la vidéo
 def generate_frames():
     # Initialisation de la capture vidéo à partir de la webcam (0 représente la première webcam disponible)
     # Pour utiliser une caméra IP, il faut le lien RTSP (ex : 'rtsp://[USER]:[PASS]@[IP_ADDRESS]:[RTSP PORT]/media/video[STREAM TYPE]')
@@ -108,9 +112,14 @@ def generate_frames():
                 # Dessin du rectangle autour de l'objet sur l'image
                 cv2.rectangle(image, (int(x_min * width), int(y_min * height)),
                               (int(x_max * width), int(y_max * height)), (0, 255, 0), 2)
+                
+                # Envoie vers Symfony
+                sendToWebhook(image)
 
         # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
         _, buffer = cv2.imencode('.jpg', image)
+
+        # Préparation pour envoyer sur le monitoring serveur
         frame = buffer.tobytes()
 
         elapsed_time = time.time() - start_time
@@ -119,6 +128,26 @@ def generate_frames():
         # Génération du flux vidéo avec le frame encodé, prêt à être envoyé au client
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+
+def sendToWebhook(image):
+    # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
+    _, buffer = cv2.imencode('.jpg', image)
+
+    # Préparation pour envoyer sur le monitoring serveur
+    imageFrame = buffer.tobytes()
+
+    # URL du webhook Symfony
+    # webhook_url = 'https://vp.edounze.com/detection_endpoint'  # Assurez-vous de mettre la bonne route de votre API Symfony
+    webhook_url = config['DEFAULT']['WebHook']
+
+    # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
+    headers = {'Content-Type': 'application/octet-stream'}
+
+    # Envoi de la requête POST avec l'image en binaire
+    response = requests.post(webhook_url, data=imageFrame, headers=headers)
+
+    print(webhook_url,"Webhook response status code:", response.status_code)
+    print("Webhook response:", response.text)
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -133,9 +162,6 @@ async def offer_async():
     # Generate a unique ID for the RTCPeerConnection
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pc_id = pc_id[:8]
-
-    # Create a data channel named "chat"
-    # pc.createDataChannel("chat")
 
     # Create and set the local description
     await pc.createOffer(offer)
@@ -163,7 +189,8 @@ def offer_route():
 @app.route('/')
 def index():
     # Page d'accueil
-    return render_template('index.html')
+    # return render_template('index.html')
+    return redirect(url_for('video_feed'))
 
 @app.route('/video_feed')
 def video_feed():
