@@ -60,6 +60,7 @@ def draw_bounding_boxes(image):
     for i in range(boxes.shape[0]):
         # Si le score de détection est supérieur à 0.5 et que la classe détectée est 44 (bouteille), dessiner un rectangle
         if scores[i] > 0.5 and classes[i] == 44:  # Classe "bouteille"
+            print('Bouteille detectée')
             # Extraction des coordonnées de la boîte englobante de l'objet
             box = boxes[i]
             y_min, x_min, y_max, x_max = box
@@ -189,8 +190,8 @@ def offer_route():
 @app.route('/')
 def index():
     # Page d'accueil
-    # return render_template('index.html')
-    return redirect(url_for('video_feed'))
+    # return redirect(url_for('video_feed'))
+    return render_template('index.html')
 
 @app.route('/video_feed')
 def video_feed():
@@ -202,15 +203,14 @@ def video_feed():
 def process_image():
     # Le début est le même que dans l'exemple précédent
     image_file = request.files['image']
-    image_stream = image_file.stream
-    image_bytes = np.asarray(bytearray(image_stream.read()), dtype=np.uint8)
-    image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
+    npimg = np.fromfile(image_file, np.uint8)
+    image = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
     # Detection de bouteilles + ajout de rectangles autour de l'objet detecté
     image = draw_bounding_boxes(image)
 
     # Encoder l'image traitée au format JPEG
-    _, encoded_image = cv2.imencode('.jpg', image)
+    _, img_encoded  = cv2.imencode('.jpg', image)
     # Convertir le tableau d'octets encodé en JPEG en un objet de type bytes
     # image_bytes = encoded_image.tobytes()
 
@@ -218,7 +218,7 @@ def process_image():
     # byte_io = io.BytesIO(image_bytes)
 
     # Retourner l'image en tant que réponse HTTP de type 'image/jpeg'
-    return Response(encoded_image.tobytes(), mimetype='image/jpeg')
+    return Response(img_encoded.tobytes(), mimetype='image/jpeg')
 
 
 # Lancement de l'application
