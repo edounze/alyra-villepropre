@@ -1,2 +1,2 @@
 [DEFAULT]
-ModelPath = data\saved_model
+ModelPath = data/saved_model

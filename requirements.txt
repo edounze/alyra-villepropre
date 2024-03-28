@@ -3,3 +3,4 @@ tensorflow==2.16.1
 opencv-python-headless==4.9.0.80
 aiortc==1.8.0
 numpy==1.26.4
+gunicorn==21.2.0
