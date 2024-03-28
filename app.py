@@ -7,8 +7,10 @@ import tensorflow as tf
 import numpy as np
 
 # Flask
-from flask import Flask, Response, request, render_template, jsonify, redirect, url_for
+from flask import Flask, Response, request, render_template, jsonify, redirect, url_for, send_file
 from aiortc import RTCPeerConnection, RTCSessionDescription
+
+import io
 import json
 import uuid
 import asyncio
@@ -30,6 +32,39 @@ infer = model.signatures['serving_default']
 
 # Set to keep track of RTCPeerConnection instances
 pcs = set()
+
+def draw_bounding_boxes(image):
+
+    # Conversion de la frame de BGR (format par défaut d'OpenCV) en RGB pour le traitement par TensorFlow
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Conversion de l'image RGB en un tenseur TensorFlow, ajout d'une dimension supplémentaire pour le batch
+    input_tensor = tf.convert_to_tensor([image_rgb], dtype=tf.uint8)
+
+    # Utilisation du modèle pour effectuer la détection d'objets sur l'image, stockage des résultats dans output_dict
+    output_dict = infer(tf.constant(input_tensor))
+
+    # Extraction des boîtes englobantes, des scores et des classes des objets détectés depuis output_dict
+    boxes = output_dict['detection_boxes'].numpy()[0]
+    scores = output_dict['detection_scores'].numpy()[0]
+    classes = output_dict['detection_classes'].numpy()[0].astype(np.int32)
+
+    # Obtention des dimensions de l'image pour le calcul des coordonnées réelles des boîtes englobantes
+    height, width, _ = image.shape
+
+    # Itération sur chaque objet détecté
+    for i in range(boxes.shape[0]):
+        # Si le score de détection est supérieur à 0.5 et que la classe détectée est 44 (bouteille), dessiner un rectangle
+        if scores[i] > 0.5 and classes[i] == 44:  # Classe "bouteille"
+            # Extraction des coordonnées de la boîte englobante de l'objet
+            box = boxes[i]
+            y_min, x_min, y_max, x_max = box
+            # Dessin du rectangle autour de l'objet sur l'image
+            cv2.rectangle(image, (int(x_min * width), int(y_min * height)),
+                            (int(x_max * width), int(y_max * height)), (0, 255, 0), 2)
+
+    return image
+
 # Définition de la fonction generate_frames qui sera utilisée pour générer et traiter les frames de la vidéo
 def generate_frames():
     # Initialisation de la capture vidéo à partir de la webcam (0 représente la première webcam disponible)
@@ -38,6 +73,7 @@ def generate_frames():
 
     # Boucle infinie pour lire les frames de la vidéo en continu
     while True:
+        start_time = time.time()
         # Lecture d'une frame de la vidéo. 'success' est un booléen indiquant si la lecture a réussi, 'image' est la frame lue
         success, image = camera.read()
 
@@ -76,6 +112,9 @@ def generate_frames():
         # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
         _, buffer = cv2.imencode('.jpg', image)
         frame = buffer.tobytes()
+
+        elapsed_time = time.time() - start_time
+        logging.debug(f"Frame generation time: {elapsed_time} seconds")
 
         # Génération du flux vidéo avec le frame encodé, prêt à être envoyé au client
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
@@ -130,6 +169,29 @@ def index():
 def video_feed():
     # Page utilisée pour le flux vidéo (voir fichier templates/index.html)
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/process', methods=['POST'])
+def process_image():
+    # Le début est le même que dans l'exemple précédent
+    image_file = request.files['image']
+    image_stream = image_file.stream
+    image_bytes = np.asarray(bytearray(image_stream.read()), dtype=np.uint8)
+    image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
+
+    # Detection de bouteilles + ajout de rectangles autour de l'objet detecté
+    image = draw_bounding_boxes(image)
+
+    # Encoder l'image traitée au format JPEG
+    _, encoded_image = cv2.imencode('.jpg', image)
+    # Convertir le tableau d'octets encodé en JPEG en un objet de type bytes
+    # image_bytes = encoded_image.tobytes()
+
+    # # Créer un objet BytesIO à partir des bytes de l'image
+    # byte_io = io.BytesIO(image_bytes)
+
+    # Retourner l'image en tant que réponse HTTP de type 'image/jpeg'
+    return Response(encoded_image.tobytes(), mimetype='image/jpeg')
 
 
 # Lancement de l'application

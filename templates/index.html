@@ -1,16 +1,65 @@
 <!DOCTYPE html>
 <html lang="fr">
   <head>
-    <meta charset="UTF-8"/>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flux Vidéo de Détection</title>
 
-	<script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
   </head>
   <body>
-    <h1>Flux Vidéo en Direct</h1>
+    <h1>Projet VP</h1>
     <img src="{{ url_for('video_feed') }}" />
 
+    <h2>Flux Vidéo en Direct</h2>
     <video id="remoteVideo" autoplay playsinline></video>
+	
+    <h2>Flux Vidéo en différé</h2>
+    <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
+    <img id="processedImage" />
+
+    <script>
+      // Accéder à la caméra
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          document.getElementById("remoteVideo").srcObject = stream;
+        })
+        .catch(console.error);
+
+      // Fonction pour capturer une image et l'envoyer au serveur
+      function captureAndSend() {
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+        context.drawImage(
+          document.getElementById("remoteVideo"),
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        canvas.toBlob((blob) => {
+          const formData = new FormData();
+          formData.append("image", blob);
+
+          fetch("/process", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              return response.blob(); // Traiter la réponse comme un Blob
+            })
+            .then((blob) => {
+              const url = URL.createObjectURL(blob);
+              // Supposons que vous avez une balise <img id="processedImage"> pour afficher l'image traitée
+              document.getElementById("processedImage").src = url;
+            });
+        }, "image/jpeg");
+      }
+
+      // Capturer et envoyer l'image toutes les secondes
+      setInterval(captureAndSend, 1000);
+    </script>
   </body>
 </html>
