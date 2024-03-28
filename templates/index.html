@@ -9,17 +9,17 @@
   </head>
   <body>
     <h1>Projet VP</h1>
-    <img src="{{ url_for('video_feed') }}" />
 
     <h2>Flux Vidéo en Direct</h2>
     <video id="remoteVideo" autoplay playsinline></video>
-	
+
     <h2>Flux Vidéo en différé</h2>
     <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
     <img id="processedImage" />
 
     <script>
       // Accéder à la caméra
+	  // <img src="{{ url_for('video_feed') }}" />
       navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((stream) => {
