@@ -67,6 +67,8 @@ def draw_bounding_boxes(image):
             # Dessin du rectangle autour de l'objet sur l'image
             cv2.rectangle(image, (int(x_min * width), int(y_min * height)),
                             (int(x_max * width), int(y_max * height)), (0, 255, 0), 2)
+            # Envoie vers Symfony
+            sendToWebhook(image)
 
     return image
 
