@@ -37,5 +37,5 @@ function sendImageToServer() {
   }, "image/jpeg");
 }
 
-// Envoyer une image au serveur toutes les 5 secondes
-setInterval(sendImageToServer, 5000);
+// Envoyer une image au serveur toutes les secondes
+setInterval(sendImageToServer, 1000);
