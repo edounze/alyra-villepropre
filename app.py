@@ -32,6 +32,7 @@ config.read('config.ini')
 # Récupération du chemin du modèle à partir du fichier de configuration
 model_path = config['DEFAULT']['ModelPath']
 model = tf.saved_model.load(model_path)
+
 infer = model.signatures['serving_default']
 
 # Set to keep track of RTCPeerConnection instances
@@ -143,11 +144,25 @@ def sendToWebhook(image):
     # webhook_url = 'https://vp.edounze.com/detection_endpoint'  # Assurez-vous de mettre la bonne route de votre API Symfony
     webhook_url = config['DEFAULT']['WebHook']
 
+
+    # Création du formulaire multipart/form-data
+    # Les clés du dictionnaire correspondent aux noms des champs attendus par votre API Symfony
+    latitude = 0
+    longitude = 0
+    files = {
+        'image': ('image.jpg', imageFrame, 'image/jpeg'),
+        'latitude': (None, str(latitude)),
+        'longitude': (None, str(longitude)),
+    }
+
     # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
-    headers = {'Content-Type': 'application/octet-stream'}
+    # headers = {'Content-Type': 'application/octet-stream'}
 
     # Envoi de la requête POST avec l'image en binaire
-    response = requests.post(webhook_url, data=imageFrame, headers=headers)
+    # response = requests.post(webhook_url, data=imageFrame, headers=headers)
+
+    # Envoi de la requête POST avec le formulaire multipart incluant l'image et les métadonnées
+    response = requests.post(webhook_url, files=files)
 
     print(webhook_url,"Webhook response status code:", response.status_code)
     print("Webhook response:", response.text)
