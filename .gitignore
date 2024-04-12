@@ -2,6 +2,8 @@
 test/datasets
 train/datasets
 
+tmp
+
 # Config
 config.ini
 
@@ -128,7 +130,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/

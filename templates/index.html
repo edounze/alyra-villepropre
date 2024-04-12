@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flux Vidéo de Détection</title>
-  </head>
-  <body>
-    <h1>Projet VP :: SERVEUR</h1>
-    <video id="remoteVideo" autoplay  style="display: none"></video>
-    <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
-    <img id="processedImage">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>Flux Vidéo de Détection</title>
+	</head>
+	<body>
+		<h1>Projet VP :: SERVEUR</h1>
+		<video id="remoteVideo" autoplay></video>
+		<canvas id="canvas" width="640" height="480" style="display: none"></canvas>
+		<img id="processedImage">
 
-    <script defer src="{{ url_for('static', filename='js/stream.js') }}"></script>
-  </body>
+		<script defer src="{{ url_for('static', filename='js/stream.js') }}"></script>
+	</body>
 </html>

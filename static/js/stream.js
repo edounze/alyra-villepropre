@@ -10,7 +10,9 @@ if (navigator.mediaDevices.getUserMedia) {
   navigator.mediaDevices
     .getUserMedia({ video: true })
     .then((stream) => (video.srcObject = stream))
-    .catch((err) => console.error("Erreur : ", err));
+    .catch((error) =>
+      console.error("Erreur lors de la capture de l'image :", error)
+    );
 }
 
 // Fonction pour envoyer une image capturée au serveur
@@ -32,10 +34,14 @@ function sendImageToServer() {
         // Traiter la réponse du serveur si nécessaire
         // Convertir le blob en une URL et l'afficher dans un élément <img>
         const imageUrl = URL.createObjectURL(blob);
-        document.getElementById('processedImage').src = imageUrl;
+        document.getElementById("processedImage").src = imageUrl;
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la capture de l'image :", error);
+        // document.getElementById("status").textContent = "Erreur: " + error.toString();
       });
   }, "image/jpeg");
 }
 
 // Envoyer une image au serveur toutes les secondes
-setInterval(sendImageToServer, 1000);
+setInterval(sendImageToServer, 10000);

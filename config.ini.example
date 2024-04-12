@@ -1,2 +1,5 @@
 [DEFAULT]
-ModelPath = data/saved_model
+; ModelPath = data/saved_model
+ModelPath = train/bin/greengardians.tflite
+WebHook = https://vp.edounze.com/webhook
+DetectionThreshold = 0.5
