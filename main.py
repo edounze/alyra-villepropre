@@ -74,16 +74,13 @@ model_path = 'train/bin/greengardians.tflite'
 if not Path(model_path).is_file():
     raise FileNotFoundError(f"Model file not found at {model_path}")
 
-interpreter = tf.lite.Interpreter(model_path=model_path)
 try:
     print('Allocate Tensors')
+   # Load the TFLite model
+    interpreter = tf.lite.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
 except Exception as e:
     raise RuntimeError("Failed to allocate tensors in the interpreter") from e
-
-# Load the TFLite model
-interpreter = tf.lite.Interpreter(model_path=model_path)
-interpreter.allocate_tensors()
 
 
 @app.route('/')
@@ -112,11 +109,16 @@ def process_image():
         # # Now you can use the temp_file.name in your draw_bounding_boxes function
         # detection_result_image = draw_bounding_boxes(TEMP_FILE, threshold=DETECTION_THRESHOLD)
 
-        detection_result_image = draw_bounding_boxes(
-            TEMP_FILE,
-            interpreter,
-            threshold=DETECTION_THRESHOLD
-        )
+        
+        try:
+            print('Detecting image')
+            detection_result_image = draw_bounding_boxes(
+                TEMP_FILE,
+                interpreter,
+                threshold=DETECTION_THRESHOLD
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to detect image") from e
 
         # Envoie vers Symfony (si nécessaire)
         # sendToWebhook(detection_result_image)

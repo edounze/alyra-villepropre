@@ -44,4 +44,4 @@ function sendImageToServer() {
 }
 
 // Envoyer une image au serveur toutes les secondes
-setInterval(sendImageToServer, 10000);
+setInterval(sendImageToServer, 1000);
