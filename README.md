@@ -2,7 +2,7 @@
 
 ## Définitions utiles
 
-### Normalisation
+### [Normalisation](https://inside-machinelearning.com/pourquoi-et-comment-normaliser-ces-donnees-pytorch-une-etape-essentielles-du-deep-learning-partie-1/)
 
 - Moyenne nulle (0)
 - Ecart type de 1
@@ -25,10 +25,14 @@ np.mean(l_norm), np.std(l_norm) # (0.0, 1.0)
 
 ```
 
-### Batch Normalisation
+### [Batch Normalisation](https://inside-machinelearning.com/batch-normalization-la-meilleure-technique-pour-ameliorer-son-deep-learning/)
 
 Normaliser la sortie d’une couche dans le contexte du Deep Learning.
 La normalisation après chaque couche (donc à l’entrée de chaque nouvelle couche) permet un meilleur apprentissage du réseau.
+
+### [Quantization](https://inside-machinelearning.com/quantization-tensorflow/)
+
+La quantization en Deep Learning est un processus permettant de réduire la taille d’un modèle dans le but d’optimiser sa vitesse de prédiction.
 
 ## Cycle de vie d'un modèle d'IA
 
