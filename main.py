@@ -1,7 +1,6 @@
 # Python libraries
-import configparser, requests, os, uuid
+import configparser, requests, os
 import traceback
-
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging below ERROR level
 
@@ -11,7 +10,7 @@ import cv2
 import tensorflow as tf
 import numpy as np
 
-import tempfile
+from pathlib import Path
 
 
 # Flask
@@ -68,6 +67,24 @@ def sendToWebhook(image):
 
 app = Flask(__name__, static_url_path='/static')
 
+# Model loading
+model_path = 'train/bin/greengardians.tflite'
+
+# Ensure the model file exists
+if not Path(model_path).is_file():
+    raise FileNotFoundError(f"Model file not found at {model_path}")
+
+interpreter = tf.lite.Interpreter(model_path=model_path)
+try:
+    print('Allocate Tensors')
+    interpreter.allocate_tensors()
+except Exception as e:
+    raise RuntimeError("Failed to allocate tensors in the interpreter") from e
+
+# Load the TFLite model
+interpreter = tf.lite.Interpreter(model_path=model_path)
+interpreter.allocate_tensors()
+
 
 @app.route('/')
 def index():
@@ -76,7 +93,6 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process_image():
-
     if 'image' not in request.files:
         return "Aucun fichier 'image' n'a été trouvé dans la requête", 400
 
@@ -87,33 +103,37 @@ def process_image():
     # return "This is a test response", 200
     try:
         # Sauvegarde du fichier un sous dossier tmp du dossier courant
-        temp_file = os.path.join('tmp', str(uuid.uuid4()) + os.path.splitext(image_file.filename)[1])
-        image_file.save(temp_file)
-        image_file = open(temp_file, 'rb')
+        # temp_file = os.path.join('tmp', str(uuid.uuid4()) + os.path.splitext(image_file.filename)[1])
+        TEMP_FILE = os.path.join('tmp', image_file.filename)
+        image_file.save(TEMP_FILE)
 
-        print (f"Processing image: {temp_file}")
+        print (f"Processing image: {TEMP_FILE}")
 
         # # Now you can use the temp_file.name in your draw_bounding_boxes function
-        detection_result_image = draw_bounding_boxes(temp_file, threshold=DETECTION_THRESHOLD)
+        # detection_result_image = draw_bounding_boxes(TEMP_FILE, threshold=DETECTION_THRESHOLD)
 
-        return "detection_result_image", 200
+        detection_result_image = draw_bounding_boxes(
+            TEMP_FILE,
+            interpreter,
+            threshold=DETECTION_THRESHOLD
+        )
 
         # Envoie vers Symfony (si nécessaire)
         # sendToWebhook(detection_result_image)
 
         # Encoder l'image traitée au format JPEG
-        # _, img_encoded = cv2.imencode('.jpg', detection_result_image)
+        _, img_encoded = cv2.imencode('.jpg', detection_result_image)
         
         # # Retourner l'image en tant que réponse HTTP de type 'image/jpeg'
-        # response = Response(img_encoded.tobytes(), mimetype='image/jpeg')
+        response = Response(img_encoded.tobytes(), mimetype='image/jpeg')
     except Exception as e:
         print(f"Error during object detection: {e}")
         traceback.print_exc()  # Provides a traceback that helps in debugging
         return "Error processing the image", 500
     finally:
         # Suppression du fichier temporaire
-        print(f"Deleting temporary file: {temp_file}")
-        os.remove(temp_file)
+        print(f"Deleting temporary file: {TEMP_FILE}")
+        os.remove(TEMP_FILE)
 
     return response
 

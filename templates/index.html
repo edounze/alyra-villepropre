@@ -4,13 +4,48 @@
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Flux Vidéo de Détection</title>
+
+		<style>
+			body {
+				background-color: #fefefe;
+			}
+			main {
+				max-width: 80%;
+				margin: 0 auto;
+			}
+
+
+			.d-block {
+				display: block;
+				margin: 0 auto;
+			}
+
+			.d-flex {
+				display: flex;
+				justify-content: space-around;
+			}
+
+			.text-center {
+				text-align: center;
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Projet VP :: SERVEUR</h1>
-		<video id="remoteVideo" autoplay></video>
-		<canvas id="canvas" width="640" height="480" style="display: none"></canvas>
-		<img id="processedImage">
-
+		<main>
+			<h1 class="text-center">Greengardians :: SERVEUR</h1>
+			<img src="/static/images/logo.png" class="d-block" alt="Logo Greengardians">
+			<section class="d-flex">
+				<div>
+					<h2 class="text-center">Images temps réel</h2>
+					<video id="remoteVideo" autoplay></video>
+					<canvas id="canvas" width="640" height="480" style="display: none"></canvas>
+				</div>
+				<div>
+					<h2 class="text-center">Images après traitement (1 image par seconde)</h2>
+					<img id="processedImage">
+				</div>
+			</section>
+		</main>
 		<script defer src="{{ url_for('static', filename='js/stream.js') }}"></script>
 	</body>
 </html>
