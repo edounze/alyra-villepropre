@@ -1,5 +1,5 @@
 # Python libraries
-import configparser, requests, os
+import configparser, os
 import traceback
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging below ERROR level
@@ -8,13 +8,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging below ER
 # Deep learning libraries
 import cv2
 import tensorflow as tf
-import numpy as np
 
 from pathlib import Path
 
 
 # Flask
-from flask import Flask, Response, request, render_template, send_file #, jsonify, redirect, url_for, 
+from flask import Flask, Response, request, render_template # send_file, jsonify, redirect, url_for, 
 
 
 from app.model import draw_bounding_boxes
@@ -30,40 +29,6 @@ config.read('config.ini')
 # Récupération du chemin du modèle à partir du fichier de configuration
 
 DETECTION_THRESHOLD = float(config['DEFAULT']['DetectionThreshold'])
-
-def sendToWebhook(image):
-    # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
-    _, buffer = cv2.imencode('.jpg', image)
-
-    # Préparation pour envoyer sur le monitoring serveur
-    imageFrame = buffer.tobytes()
-
-    # URL du webhook Symfony
-    # webhook_url = 'https://vp.edounze.com/detection_endpoint'  # Assurez-vous de mettre la bonne route de votre API Symfony
-    webhook_url = config['DEFAULT']['WebHook']
-
-
-    # Création du formulaire multipart/form-data
-    # Les clés du dictionnaire correspondent aux noms des champs attendus par votre API Symfony
-    latitude = 0
-    longitude = 0
-    files = {
-        'image': ('image.jpg', imageFrame, 'image/jpeg'),
-        'latitude': (None, str(latitude)),
-        'longitude': (None, str(longitude)),
-    }
-
-    # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
-    # headers = {'Content-Type': 'application/octet-stream'}
-
-    # Envoi de la requête POST avec l'image en binaire
-    # response = requests.post(webhook_url, data=imageFrame, headers=headers)
-
-    # Envoi de la requête POST avec le formulaire multipart incluant l'image et les métadonnées
-    response = requests.post(webhook_url, files=files)
-
-    print(webhook_url,"Webhook response status code:", response.status_code)
-    print("Webhook response:", response.text)
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -86,7 +51,28 @@ except Exception as e:
 @app.route('/')
 def index():
     # Page d'accueil
-    return render_template('index.html')
+    return render_template('index.html')    
+    # array = np.arange(0, 737280, 1, np.uint8)     
+    # # check type of array 
+    # print(type(array)) 
+    
+    # # our array will be of width  
+    # # 737280 pixels That means it  
+    # # will be a long dark line 
+    # print(array.shape) 
+    
+    # # Reshape the array into a  
+    # # familiar resoluition 
+    # image_Array = np.reshape(array, (1024, 720)) 
+    
+    # # show the shape of the array 
+    # print(image_Array.shape) 
+
+    # # show the array 
+    # print(image_Array) 
+    # sendToWebhook(image_Array)
+
+    # return Response('Hello world')
 
 @app.route('/process', methods=['POST'])
 def process_image():
@@ -105,10 +91,6 @@ def process_image():
         image_file.save(TEMP_FILE)
 
         print (f"Processing image: {TEMP_FILE}")
-
-        # # Now you can use the temp_file.name in your draw_bounding_boxes function
-        # detection_result_image = draw_bounding_boxes(TEMP_FILE, threshold=DETECTION_THRESHOLD)
-
         
         try:
             print('Detecting image')
@@ -119,9 +101,6 @@ def process_image():
             )
         except Exception as e:
             raise RuntimeError("Failed to detect image") from e
-
-        # Envoie vers Symfony (si nécessaire)
-        # sendToWebhook(detection_result_image)
 
         # Encoder l'image traitée au format JPEG
         _, img_encoded = cv2.imencode('.jpg', detection_result_image)

@@ -2,12 +2,55 @@ import numpy as np
 import cv2
 from .preprocess import preprocess_image
 
+import configparser, requests
+
 
 # Load the labels into a list
 classes = ['plastique', 'canette']
 
 # Define a list of colors for visualization
 COLORS = np.random.randint(0, 255, size=(len(classes), 3), dtype=np.uint8)
+
+
+def sendToWebhook(image, category = 'plastique'):    
+  print("Sending to webhook")
+  # Création d'un objet ConfigParser
+  config = configparser.ConfigParser()
+  # Lecture du fichier de configuration
+  config.read('config.ini')
+
+  # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
+  _, buffer = cv2.imencode('.jpg', image)
+
+  # Préparation pour envoyer sur le monitoring serveur
+  imageFrame = buffer.tobytes()
+
+  # URL du webhook Symfony
+  # webhook_url = 'https://vp.edounze.com/detection_endpoint'
+  webhook_url = config['DEFAULT']['WebHook']
+
+  # Création du formulaire multipart/form-data
+  # Les clés du dictionnaire correspondent aux noms des champs attendus par l'API Symfony
+  latitude = 48
+  longitude = 23
+  files = {
+      'image': ('image.jpg', imageFrame, 'image/jpeg'),
+      'latitude': (None, str(latitude)),
+      'longitude': (None, str(longitude)),
+      'category' : (None, category)
+  }
+
+  # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
+  # headers = {'Content-Type': 'application/octet-stream'}
+
+  # Envoi de la requête POST avec l'image en binaire
+  # response = requests.post(webhook_url, data=imageFrame, headers=headers)
+
+  # Envoi de la requête POST avec le formulaire multipart incluant l'image et les métadonnées
+  response = requests.post(webhook_url, files=files)
+
+  print(webhook_url,"Webhook response status code:", response.status_code)
+  print("Webhook response:", response.text)
 
 def detect_objects(interpreter, image, threshold):
   """Returns a list of detection results, each a dictionary of object info."""
@@ -50,7 +93,7 @@ def draw_bounding_boxes(image_path, interpreter, threshold=0.5):
   preprocessed_image, original_image = preprocess_image(
       image_path,
       (input_height, input_width)
-    )
+  )
 
   # Run object detection on the input image
   results = detect_objects(interpreter, preprocessed_image, threshold=threshold)
@@ -76,8 +119,10 @@ def draw_bounding_boxes(image_path, interpreter, threshold=0.5):
     # Make adjustments to make the label visible for all objects
     y = ymin - 15 if ymin - 15 > 15 else ymin + 15
     label = "{}: {:.0f}%".format(classes[class_id], obj['score'] * 100)
-    cv2.putText(original_image_np, label, (xmin, y),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+    cv2.putText(original_image_np, label, (xmin, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    # Send to webhook
+    sendToWebhook(original_image_np, category=class_id)
 
   # Return the final image
   # original_float32 = original_image_np.astype(np.float32)
