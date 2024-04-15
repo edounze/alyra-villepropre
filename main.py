@@ -51,28 +51,7 @@ except Exception as e:
 @app.route('/')
 def index():
     # Page d'accueil
-    return render_template('index.html')    
-    # array = np.arange(0, 737280, 1, np.uint8)     
-    # # check type of array 
-    # print(type(array)) 
-    
-    # # our array will be of width  
-    # # 737280 pixels That means it  
-    # # will be a long dark line 
-    # print(array.shape) 
-    
-    # # Reshape the array into a  
-    # # familiar resoluition 
-    # image_Array = np.reshape(array, (1024, 720)) 
-    
-    # # show the shape of the array 
-    # print(image_Array.shape) 
-
-    # # show the array 
-    # print(image_Array) 
-    # sendToWebhook(image_Array)
-
-    # return Response('Hello world')
+    return render_template('index.html')
 
 @app.route('/process', methods=['POST'])
 def process_image():
@@ -99,6 +78,9 @@ def process_image():
                 interpreter,
                 threshold=DETECTION_THRESHOLD
             )
+
+            # Show the detection result
+
         except Exception as e:
             raise RuntimeError("Failed to detect image") from e
 
@@ -113,8 +95,11 @@ def process_image():
         return "Error processing the image", 500
     finally:
         # Suppression du fichier temporaire
-        print(f"Deleting temporary file: {TEMP_FILE}")
-        os.remove(TEMP_FILE)
+        if os.path.exists(TEMP_FILE):
+            print(f"Deleting temporary file: {TEMP_FILE}")
+            os.remove(TEMP_FILE)
+        else:
+            print(f"Le fichier temporaire {TEMP_FILE} n'existe pas.")
 
     return response
 

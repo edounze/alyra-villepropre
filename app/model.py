@@ -6,10 +6,14 @@ import configparser, requests
 
 
 # Load the labels into a list
-classes = ['plastique', 'canette']
+classe_list = ['plastique', 'canette']
 
 # Define a list of colors for visualization
-COLORS = np.random.randint(0, 255, size=(len(classes), 3), dtype=np.uint8)
+# COLORS = np.random.randint(0, 255, size=(len(classe_list), 3), dtype=np.uint8)
+COLORS = {
+    'plastique': (0, 255, 0),  # Green
+    'canette': (0, 0, 255)  # Red
+}
 
 
 def sendToWebhook(image, category = 'plastique'):    
@@ -20,7 +24,7 @@ def sendToWebhook(image, category = 'plastique'):
   config.read('config.ini')
 
   # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
-  _, buffer = cv2.imencode('.jpg', image)
+  _, buffer = cv2.imencode('.png', image)
 
   # Préparation pour envoyer sur le monitoring serveur
   imageFrame = buffer.tobytes()
@@ -99,8 +103,8 @@ def draw_bounding_boxes(image_path, interpreter, threshold=0.5):
   results = detect_objects(interpreter, preprocessed_image, threshold=threshold)
 
   # Plot the detection results on the input image
-  # original_image_np = original_image.numpy().astype(np.uint8)
   original_image_np = original_image.numpy().astype(np.uint8)
+
   for obj in results:
     # Convert the object bounding box from relative coordinates to absolute
     # coordinates based on the original image resolution
@@ -112,17 +116,19 @@ def draw_bounding_boxes(image_path, interpreter, threshold=0.5):
 
     # Find the class index of the current object
     class_id = int(obj['class_id'])
+    class_name = classe_list[class_id]
 
     # Draw the bounding box and label on the image
-    color = [int(c) for c in COLORS[class_id]]
+    # color = [int(c) for c in COLORS[class_id]]
+    color = COLORS[class_name]  # Get color based on class name
     cv2.rectangle(original_image_np, (xmin, ymin), (xmax, ymax), color, 2)
     # Make adjustments to make the label visible for all objects
     y = ymin - 15 if ymin - 15 > 15 else ymin + 15
-    label = "{}: {:.0f}%".format(classes[class_id], obj['score'] * 100)
+    label = "{}: {:.0f}%".format(class_name, obj['score'] * 100)
     cv2.putText(original_image_np, label, (xmin, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     # Send to webhook
-    sendToWebhook(original_image_np, category=class_id)
+    sendToWebhook(original_image_np, category=class_name)
 
   # Return the final image
   # original_float32 = original_image_np.astype(np.float32)
