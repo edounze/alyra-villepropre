@@ -132,7 +132,7 @@ def generate_frames():
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 
-def sendToWebhook(image):
+def sendToWebhook(image, category = 'plastique'):
     # Encodage de l'image traitée au format JPEG pour l'envoi via le flux vidéo
     _, buffer = cv2.imencode('.jpg', image)
 
@@ -143,11 +143,26 @@ def sendToWebhook(image):
     # webhook_url = 'https://vp.edounze.com/detection_endpoint'  # Assurez-vous de mettre la bonne route de votre API Symfony
     webhook_url = config['DEFAULT']['WebHook']
 
-    # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
-    headers = {'Content-Type': 'application/octet-stream'}
+    latitude = 48
+    longitude = 23
+    files = {
+      'image': ('image.jpg', imageFrame, 'image/jpeg'),
+      'latitude': (None, str(latitude)),
+      'longitude': (None, str(longitude)),
+      'category' : (None, category)
+    }
 
-    # Envoi de la requête POST avec l'image en binaire
-    response = requests.post(webhook_url, data=imageFrame, headers=headers)
+  # Envoi de la requête POST avec le formulaire multipart incluant l'image et les métadonnées
+    response = requests.post(webhook_url, files=files)
+
+    print(webhook_url,"Webhook response status code:", response.status_code)
+    print("Webhook response:", response.text)
+
+    # # Préparation des headers HTTP pour indiquer qu'il s'agit d'un fichier
+    # headers = {'Content-Type': 'application/octet-stream'}
+
+    # # Envoi de la requête POST avec l'image en binaire
+    # response = requests.post(webhook_url, data=imageFrame, headers=headers)
 
     print(webhook_url,"Webhook response status code:", response.status_code)
     print("Webhook response:", response.text)
