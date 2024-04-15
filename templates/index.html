@@ -7,13 +7,24 @@
 
 		<style>
 			body {
-				background-color: #fefefe;
+				background-color: #dedede;
+				padding: 2em;
 			}
 			main {
-				max-width: 80%;
+				max-width: 95%;
 				margin: 0 auto;
+				background-color: #fefefe;
+				padding: 1em;
+				border-radius: 20px;
 			}
 
+			video {
+				max-width: 100%;
+			}
+
+			.video--local > div {
+				width: 50%;
+			}
 
 			.d-block {
 				display: block;
@@ -22,7 +33,7 @@
 
 			.d-flex {
 				display: flex;
-				justify-content: space-around;
+				justify-content: space-between;
 			}
 
 			.text-center {
@@ -34,15 +45,32 @@
 		<main>
 			<h1 class="text-center">Greengardians :: MONITORING</h1>
 			<img src="/static/images/logo.png" class="d-block" alt="Logo Greengardians">
-			<section class="d-flex">
+
+			<h2 class="text-center">Webcam</h2>
+			<section class="video--local d-flex">
 				<div>
-					<h2 class="text-center">Images temps réel</h2>
-					<video id="remoteVideo" autoplay></video>
+					<h3 class="text-center">Images temps réel</h3>
+					<video id="localVideo" autoplay></video>
 					<canvas id="canvas" width="640" height="480" style="display: none"></canvas>
 				</div>
 				<div>
-					<h2 class="text-center">Images après traitement (1 image par seconde)</h2>
+					<h3 class="text-center">Images après traitement (1 image par seconde)</h3>
 					<img id="processedImage">
+				</div>
+			</section>
+
+			<h2 class="text-center">Remote vidéo</h2>
+			<section class="video--local d-flex">
+				<div>
+					<h3 class="text-center">Images temps réel</h3>
+					<video id="remoteVideo" autoplay loop>
+						<source src="/static/camera.mp4" type="video/mp4"/>
+					</video>
+					<canvas id="canvasRemote" width="640" height="480" style="display: none"></canvas>
+				</div>
+				<div>
+					<h3 class="text-center">Images après traitement (1 image par seconde)</h3>
+					<img id="processedImageRemote">
 				</div>
 			</section>
 		</main>

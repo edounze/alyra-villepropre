@@ -1,5 +1,6 @@
 # Python libraries
-import configparser, os
+import configparser, os, uuid
+
 import traceback
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging below ERROR level
@@ -66,7 +67,8 @@ def process_image():
     try:
         # Sauvegarde du fichier un sous dossier tmp du dossier courant
         # temp_file = os.path.join('tmp', str(uuid.uuid4()) + os.path.splitext(image_file.filename)[1])
-        TEMP_FILE = os.path.join('tmp', image_file.filename)
+        unique_filename = str(uuid.uuid4()) + os.path.splitext(image_file.filename)[1]
+        TEMP_FILE = os.path.join('tmp', unique_filename)
         image_file.save(TEMP_FILE)
 
         print (f"Processing image: {TEMP_FILE}")
